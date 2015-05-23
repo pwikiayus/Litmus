@@ -6,3 +6,11 @@
 export type Expectation = "deterministic" | "flaky" | "unspecified";
 export interface NormalizeSpec {
     strip_timestamps?: boolean;
+    strip_hex?: boolean;
+    strip_temp_paths?: boolean;
+    trim_trailing_ws?: boolean;
+    sort_lines?: boolean;
+    drop_substrings?: readonly string[];
+}
+export interface ScenarioSpec {
+    name: string;
