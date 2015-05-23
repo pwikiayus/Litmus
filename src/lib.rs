@@ -123,3 +123,66 @@ fn render_group(
             ));
         }
     }
+}
+
+/// Build a unicode bar of `width` cells representing `count/total`.
+fn bar(count: u32, total: u32, width: usize) -> String {
+    if total == 0 {
+        return " ".repeat(width);
+    }
+    let filled = ((count as f64 / total as f64) * width as f64).round() as usize;
+    let filled = filled.min(width);
+    let mut s = String::with_capacity(width);
+    for _ in 0..filled {
+        s.push('█');
+    }
+    for _ in filled..width {
+        s.push('░');
+    }
+    s
+}
+
+/// Collapse a sorted-ish index list into compact ranges, e.g. `0-3, 5, 7-9`.
+fn summarize_indices(indices: &[u32]) -> String {
+    if indices.is_empty() {
+        return "(none)".to_string();
+    }
+    let mut sorted = indices.to_vec();
+    sorted.sort_unstable();
+    let mut parts: Vec<String> = Vec::new();
+    let mut start = sorted[0];
+    let mut prev = sorted[0];
+    for &v in &sorted[1..] {
+        if v == prev + 1 {
+            prev = v;
+            continue;
+        }
+        parts.push(fmt_range(start, prev));
+        start = v;
+        prev = v;
+    }
+    parts.push(fmt_range(start, prev));
+    parts.join(", ")
+}
+
+fn fmt_range(start: u32, end: u32) -> String {
+    if start == end {
+        start.to_string()
+    } else {
+        format!("{start}-{end}")
+    }
+}
+
+/// ANSI palette; every field is empty when color is disabled.
+struct Palette {
+    reset: &'static str,
+    bold: &'static str,
+    dim: &'static str,
+    red: &'static str,
+    green: &'static str,
+    yellow: &'static str,
+}
+
+impl Palette {
+    fn new(color: bool) -> Palette {
+        if color {
