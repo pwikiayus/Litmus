@@ -21,3 +21,51 @@ export interface ScenarioSpec {
   /** Command tokens; the first is the program, the rest are arguments. */
   command: readonly string[];
   runs?: number;
+  timeout_ms?: number;
+  seed?: number;
+  shuffle_env?: boolean;
+  workdir?: string;
+  expect?: Expectation;
+  env?: Readonly<Record<string, string>>;
+  normalize?: NormalizeSpec;
+}
+
+/** Quote a command token if it contains whitespace or quote characters. */
+export function quoteToken(token: string): string {
+  if (token.length === 0) {
+    return '""';
+  }
+  if (!/[\s"']/.test(token)) {
+    return token;
+  }
+  if (!token.includes('"')) {
+    return `"${token}"`;
+  }
+  if (!token.includes("'")) {
+    return `'${token}'`;
+  }
+  // Contains both quote types: fall back to double-quotes and rely on the
+  // authoring caller to avoid embedding raw double quotes (documented).
+  return `"${token.replace(/"/g, "")}"`;
+}
+
+function assertValid(spec: ScenarioSpec): void {
+  if (!spec.name || spec.name.trim() === "") {
+    throw new Error("scenario name is required");
+  }
+  if (!spec.command || spec.command.length === 0) {
+    throw new Error("scenario command must have at least one token");
+  }
+  if (spec.runs !== undefined && (!Number.isInteger(spec.runs) || spec.runs < 1)) {
+    throw new Error("runs must be an integer >= 1");
+  }
+  if (
+    spec.timeout_ms !== undefined &&
+    (!Number.isInteger(spec.timeout_ms) || spec.timeout_ms < 0)
+  ) {
+    throw new Error("timeout_ms must be a non-negative integer");
+  }
+}
+
+/** Serialize a {@link ScenarioSpec} into `.litmus` file text. */
+export function toScenarioText(spec: ScenarioSpec): string {
