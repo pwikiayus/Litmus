@@ -21,27 +21,3 @@ export interface ScenarioSpec {
   /** Command tokens; the first is the program, the rest are arguments. */
   command: readonly string[];
   runs?: number;
-  timeout_ms?: number;
-  seed?: number;
-  shuffle_env?: boolean;
-  workdir?: string;
-  expect?: Expectation;
-  env?: Readonly<Record<string, string>>;
-  normalize?: NormalizeSpec;
-}
-
-/** Quote a command token if it contains whitespace or quote characters. */
-export function quoteToken(token: string): string {
-  if (token.length === 0) {
-    return '""';
-  }
-  if (!/[\s"']/.test(token)) {
-    return token;
-  }
-  if (!token.includes('"')) {
-    return `"${token}"`;
-  }
-  if (!token.includes("'")) {
-    return `'${token}'`;
-  }
-  // Contains both quote types: fall back to double-quotes and rely on the
