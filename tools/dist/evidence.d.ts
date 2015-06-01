@@ -18,13 +18,3 @@ export interface Outcome {
     readonly fingerprint: string;
     readonly exit_code: number | null;
     readonly timed_out: boolean;
-    readonly duration_ms: number;
-}
-export interface Evidence {
-    readonly schema: string;
-    readonly scenario: string;
-    readonly description: string;
-    readonly command: readonly string[];
-    readonly total_runs: number;
-    readonly distinct_outcomes: number;
-    readonly expectation: Expectation;
