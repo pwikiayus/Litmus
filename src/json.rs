@@ -58,3 +58,64 @@ impl Json {
                     return;
                 }
                 out.push('[');
+                for (i, item) in items.iter().enumerate() {
+                    if i > 0 {
+                        out.push(',');
+                    }
+                    if pretty {
+                        out.push('\n');
+                        push_indent(out, indent + 1);
+                    }
+                    item.write(out, indent + 1, pretty);
+                }
+                if pretty {
+                    out.push('\n');
+                    push_indent(out, indent);
+                }
+                out.push(']');
+            }
+            Json::Object(fields) => {
+                if fields.is_empty() {
+                    out.push_str("{}");
+                    return;
+                }
+                out.push('{');
+                for (i, (key, value)) in fields.iter().enumerate() {
+                    if i > 0 {
+                        out.push(',');
+                    }
+                    if pretty {
+                        out.push('\n');
+                        push_indent(out, indent + 1);
+                    }
+                    write_escaped(out, key);
+                    out.push(':');
+                    if pretty {
+                        out.push(' ');
+                    }
+                    value.write(out, indent + 1, pretty);
+                }
+                if pretty {
+                    out.push('\n');
+                    push_indent(out, indent);
+                }
+                out.push('}');
+            }
+        }
+    }
+}
+
+fn push_indent(out: &mut String, level: usize) {
+    for _ in 0..level {
+        out.push_str("  ");
+    }
+}
+
+/// Write a JSON string literal with proper escaping per RFC 8259.
+fn write_escaped(out: &mut String, s: &str) {
+    out.push('"');
+    for ch in s.chars() {
+        match ch {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
