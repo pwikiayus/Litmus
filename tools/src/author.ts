@@ -69,3 +69,27 @@ function assertValid(spec: ScenarioSpec): void {
 
 /** Serialize a {@link ScenarioSpec} into `.litmus` file text. */
 export function toScenarioText(spec: ScenarioSpec): string {
+  assertValid(spec);
+  const lines: string[] = [];
+
+  lines.push(`name = ${spec.name}`);
+  if (spec.description) {
+    lines.push(`description = ${spec.description}`);
+  }
+  lines.push("");
+  lines.push("[run]");
+  lines.push(`command = ${spec.command.map(quoteToken).join(" ")}`);
+  if (spec.runs !== undefined) lines.push(`runs = ${spec.runs}`);
+  if (spec.timeout_ms !== undefined) lines.push(`timeout_ms = ${spec.timeout_ms}`);
+  if (spec.seed !== undefined) lines.push(`seed = ${spec.seed}`);
+  if (spec.shuffle_env !== undefined) {
+    lines.push(`shuffle_env = ${spec.shuffle_env}`);
+  }
+  if (spec.workdir !== undefined) lines.push(`workdir = ${spec.workdir}`);
+  if (spec.expect !== undefined) lines.push(`expect = ${spec.expect}`);
+
+  if (spec.env && Object.keys(spec.env).length > 0) {
+    lines.push("");
+    lines.push("[env]");
+    for (const [k, v] of Object.entries(spec.env)) {
+      lines.push(`${k} = ${v}`);

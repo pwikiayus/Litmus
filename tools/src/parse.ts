@@ -39,3 +39,45 @@ function requireBool(obj: Record<string, unknown>, key: string): boolean {
     throw new EvidenceError(`field "${key}" must be a boolean`);
   }
   return v;
+}
+
+function requireArray(obj: Record<string, unknown>, key: string): unknown[] {
+  const v = obj[key];
+  if (!Array.isArray(v)) {
+    throw new EvidenceError(`field "${key}" must be an array`);
+  }
+  return v;
+}
+
+const VERDICTS: readonly Verdict[] = [
+  "stable",
+  "diverged",
+  "expectation_violated",
+];
+
+const EXPECTATIONS: readonly Expectation[] = [
+  "deterministic",
+  "flaky",
+  "unspecified",
+];
+
+function asVerdict(value: string): Verdict {
+  if ((VERDICTS as readonly string[]).includes(value)) {
+    return value as Verdict;
+  }
+  throw new EvidenceError(`unknown verdict: ${JSON.stringify(value)}`);
+}
+
+function asExpectation(value: string): Expectation {
+  if ((EXPECTATIONS as readonly string[]).includes(value)) {
+    return value as Expectation;
+  }
+  throw new EvidenceError(`unknown expectation: ${JSON.stringify(value)}`);
+}
+
+function parseGroup(value: unknown, index: number): OutcomeGroup {
+  if (!isObject(value)) {
+    throw new EvidenceError(`groups[${index}] must be an object`);
+  }
+  const run_indices = requireArray(value, "run_indices").map((n, i) => {
+    if (typeof n !== "number" || !Number.isInteger(n)) {
