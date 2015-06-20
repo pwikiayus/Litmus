@@ -81,3 +81,44 @@ function parseGroup(value: unknown, index: number): OutcomeGroup {
   }
   const run_indices = requireArray(value, "run_indices").map((n, i) => {
     if (typeof n !== "number" || !Number.isInteger(n)) {
+      throw new EvidenceError(`groups[${index}].run_indices[${i}] must be an integer`);
+    }
+    return n;
+  });
+  return {
+    fingerprint: requireString(value, "fingerprint"),
+    count: requireNumber(value, "count"),
+    run_indices,
+    sample: requireString(value, "sample"),
+  };
+}
+
+function parseOutcome(value: unknown, index: number): Outcome {
+  if (!isObject(value)) {
+    throw new EvidenceError(`outcomes[${index}] must be an object`);
+  }
+  const rawExit = value["exit_code"];
+  let exit_code: number | null;
+  if (rawExit === null) {
+    exit_code = null;
+  } else if (typeof rawExit === "number" && Number.isInteger(rawExit)) {
+    exit_code = rawExit;
+  } else {
+    throw new EvidenceError(`outcomes[${index}].exit_code must be an integer or null`);
+  }
+  return {
+    run_index: requireNumber(value, "run_index"),
+    seed: requireNumber(value, "seed"),
+    fingerprint: requireString(value, "fingerprint"),
+    exit_code,
+    timed_out: requireBool(value, "timed_out"),
+    duration_ms: requireNumber(value, "duration_ms"),
+  };
+}
+
+/** Parse and validate a raw JSON string into typed {@link Evidence}. */
+export function parseEvidence(raw: string): Evidence {
+  let data: unknown;
+  try {
+    data = JSON.parse(raw);
+  } catch (err) {
