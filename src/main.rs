@@ -108,3 +108,114 @@ fn run(args: &[String]) -> Result<ExitCode, String> {
             }
             Ok(ExitCode::SUCCESS)
         }
+        Mode::Run | Mode::Check => {
+            if opts.json {
+                print!("{}", report.to_json().to_pretty());
+            } else {
+                print!("{}", render_text(&report, opts.color, opts.sample_lines));
+            }
+            if let Some(path) = &opts.out {
+                std::fs::write(path, report.to_json().to_pretty())
+                    .map_err(|e| format!("cannot write {path}: {e}"))?;
+                eprintln!("litmus: wrote evidence to {path}");
+            }
+            if matches!(command, Mode::Check) && report.is_failure() {
+                Ok(ExitCode::from(1))
+            } else {
+                Ok(ExitCode::SUCCESS)
+            }
+        }
+        Mode::Explain => unreachable!("handled above"),
+    }
+}
+
+fn parse_options(args: &[String]) -> Result<Options, String> {
+    let mut scenario_path: Option<String> = None;
+    let mut runs = None;
+    let mut timeout_ms = None;
+    let mut seed = None;
+    let mut json = false;
+    let mut out = None;
+    let mut color = supports_color();
+    let mut sample_lines = 4usize;
+
+    let mut i = 0;
+    while i < args.len() {
+        let arg = args[i].as_str();
+        match arg {
+            "--runs" => {
+                runs = Some(parse_num(next(args, &mut i, "--runs")?)?);
+            }
+            "--timeout-ms" => {
+                timeout_ms = Some(parse_num(next(args, &mut i, "--timeout-ms")?)?);
+            }
+            "--seed" => {
+                seed = Some(parse_num(next(args, &mut i, "--seed")?)?);
+            }
+            "--sample-lines" => {
+                sample_lines = parse_num::<usize>(next(args, &mut i, "--sample-lines")?)?;
+            }
+            "--out" => {
+                out = Some(next(args, &mut i, "--out")?.to_string());
+            }
+            "--json" => json = true,
+            "--no-color" => color = false,
+            "--color" => color = true,
+            other if other.starts_with('-') => {
+                return Err(format!("unknown option {other:?}"));
+            }
+            other => {
+                if scenario_path.is_some() {
+                    return Err(format!("unexpected extra argument {other:?}"));
+                }
+                scenario_path = Some(other.to_string());
+            }
+        }
+        i += 1;
+    }
+
+    let scenario_path = scenario_path.ok_or("missing scenario file path")?;
+    Ok(Options {
+        scenario_path,
+        runs,
+        timeout_ms,
+        seed,
+        json,
+        out,
+        color,
+        sample_lines,
+    })
+}
+
+fn next<'a>(args: &'a [String], i: &mut usize, flag: &str) -> Result<&'a str, String> {
+    *i += 1;
+    args.get(*i)
+        .map(String::as_str)
+        .ok_or_else(|| format!("{flag} requires a value"))
+}
+
+fn parse_num<T: std::str::FromStr>(s: &str) -> Result<T, String> {
+    s.parse::<T>().map_err(|_| format!("invalid number: {s:?}"))
+}
+
+/// Respect `NO_COLOR` (https://no-color.org) and disable color when stdout is
+/// likely not a terminal is hard without extra deps, so we default to on and
+/// let `--no-color` / `NO_COLOR` turn it off.
+fn supports_color() -> bool {
+    std::env::var_os("NO_COLOR").is_none()
+}
+
+fn print_explain(s: &Scenario) {
+    println!("scenario     : {}", s.name);
+    if !s.description.is_empty() {
+        println!("description  : {}", s.description);
+    }
+    println!("command      : {}", s.command.join(" "));
+    println!("runs         : {}", s.runs);
+    println!(
+        "timeout_ms   : {}",
+        s.timeout_ms
+            .map(|t| t.to_string())
+            .unwrap_or_else(|| "none".into())
+    );
+    println!("seed         : {}", s.seed);
