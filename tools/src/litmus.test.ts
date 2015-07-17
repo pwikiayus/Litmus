@@ -62,3 +62,35 @@ test("parseEvidence rejects invalid JSON", () => {
 
 test("validateEvidence rejects wrong schema", () => {
   assert.throws(
+    () => validateEvidence({ ...JSON.parse(VALID), schema: "other@1" }),
+    /unexpected schema/,
+  );
+});
+
+test("validateEvidence rejects bad verdict", () => {
+  assert.throws(
+    () => validateEvidence({ ...JSON.parse(VALID), verdict: "boom" }),
+    /unknown verdict/,
+  );
+});
+
+test("validateEvidence rejects non-integer run_indices", () => {
+  const data = JSON.parse(VALID);
+  data.groups[0].run_indices = [0, 1.5];
+  assert.throws(() => validateEvidence(data), /run_indices/);
+});
+
+test("validateEvidence allows null exit_code", () => {
+  const data = JSON.parse(VALID);
+  data.outcomes[0].exit_code = null;
+  const ev = validateEvidence(data);
+  assert.equal(ev.outcomes[0].exit_code, null);
+});
+
+test("escapeHtml escapes dangerous characters", () => {
+  assert.equal(
+    escapeHtml(`<script>"'&`),
+    "&lt;script&gt;&quot;&#39;&amp;",
+  );
+});
+

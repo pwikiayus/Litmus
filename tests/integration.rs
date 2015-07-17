@@ -43,26 +43,3 @@ fn divergent_exit_codes_are_detected() {
     };
     let mut s = scenario_with_command("name = exitdiverge\n#", shell_cmd);
     s.runs = 6;
-    s.expect = litmus::Expectation::Unspecified;
-
-    let report = investigate(&s).expect("run should succeed");
-    assert!(
-        report.distinct_outcomes >= 2,
-        "expected divergence from alternating exit codes, got {} distinct",
-        report.distinct_outcomes
-    );
-    assert_eq!(report.verdict, Verdict::Diverged);
-}
-
-#[test]
-fn deterministic_expectation_violated_when_output_varies() {
-    // Print the run index -> every run differs -> violates a determinism claim.
-    let shell_cmd = if cfg!(windows) {
-        "echo %LITMUS_RUN%"
-    } else {
-        "echo $LITMUS_RUN"
-    };
-    let mut s = scenario_with_command("name = violate\n#", shell_cmd);
-    s.runs = 4;
-    s.expect = litmus::Expectation::Deterministic;
-
