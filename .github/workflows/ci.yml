@@ -109,3 +109,6 @@ jobs:
           path: |
             evidence.json
             report.html
+
+permissions:
+  contents: read
